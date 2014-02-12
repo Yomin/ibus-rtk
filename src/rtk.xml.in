@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<component>
+    <name>org.freedesktop.IBus.RTK</name>
+    <description>RTK Component</description>
+    <exec>%libexecdir%/ibus-engine-rtk --ibus</exec>
+    <version>%PACKAGE_VERSION%</version>
+    <author>Martin Rödel aka Yomin &lt;%PACKAGE_BUGREPORT%&gt;</author>
+    <license>MIT</license>
+    <homepage>%PACKAGE_URL%</homepage>
+    <textdomain>ibus-rtk</textdomain>
+
+    <engines>
+        <engine>
+            <name>rtk</name>
+            <language>ja</language>
+            <license>MIT</license>
+            <author>Martin Rödel aka Yomin &lt;%PACKAGE_BUGREPORT%&gt;</author>
+            <icon>%pkgdatadir%/icons/ibus-rtk.svg</icon>
+            <layout>default</layout>
+            <longname>RTK</longname>
+            <description>RTK Input Method</description>
+            <rank>99</rank>
+        </engine>
+    </engines>
+
+</component>
