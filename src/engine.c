@@ -108,7 +108,7 @@ static void ibus_rtk_engine_reset(IBusRTKEngine *rtk)
     ibus_engine_hide_lookup_table((IBusEngine*)rtk);
 }
 
-static void ibus_rtk_engine_update_preedit(IBusRTKEngine *rtk, gboolean red)
+static void ibus_rtk_engine_update_preedit(IBusRTKEngine *rtk, struct rtkinput *input)
 {
     IBusText *text;
     guint x, pos, len;
@@ -121,12 +121,17 @@ static void ibus_rtk_engine_update_preedit(IBusRTKEngine *rtk, gboolean red)
         len = g_array_index(rtk->primitives, GString*, x)->len;
         ibus_attr_list_append(text->attrs,
             ibus_attr_underline_new(IBUS_ATTR_UNDERLINE_SINGLE, pos, pos+len));
+        if(input)
+        {
+            if(!input[x].found)
+                ibus_attr_list_append(text->attrs,
+                    ibus_attr_foreground_new(0xff0000, pos, pos+len));
+            else
+                ibus_attr_list_append(text->attrs,
+                    ibus_attr_foreground_new(0x00ff00, pos, pos+len));
+        }
         pos += len+1;
     }
-    
-    if(red)
-        ibus_attr_list_append(text->attrs,
-            ibus_attr_foreground_new(0xff0000, 0, rtk->preedit->len));
     
     ibus_engine_update_preedit_text((IBusEngine*)rtk, text, rtk->cursor, TRUE);
     
@@ -176,22 +181,27 @@ static void ibus_rtk_engine_update_lookup(IBusRTKEngine *rtk)
     ibus_engine_update_lookup_table((IBusEngine*)rtk, rtk->table, TRUE);
 }
 
-static gboolean ibus_rtk_engine_lookup(IBusRTKEngine *rtk)
+static void ibus_rtk_engine_lookup(IBusRTKEngine *rtk)
 {
     IBusText *text;
     struct rtkresult *result;
-    gchar **primitives;
+    struct rtkinput *input;
     guint x;
     
-    primitives = g_malloc_n(rtk->primitive_count, sizeof(gchar*));
+    input = g_malloc_n(rtk->primitive_count, sizeof(struct rtkinput));
     for(x=0; x<rtk->primitive_count; x++)
-        primitives[x] = g_array_index(rtk->primitives, GString*, x)->str;
+        input[x].primitive = g_array_index(rtk->primitives, GString*, x)->str;
     
-    rtk->lookup = result = rtk_lookup(rtk->primitive_count, primitives);
-    g_free(primitives);
+    rtk->lookup = result = rtk_lookup(rtk->primitive_count, input);
     
     if(!result)
-        return FALSE;
+    {
+        ibus_rtk_engine_update_preedit(rtk, input);
+        g_free(input);
+        return;
+    }
+    
+    g_free(input);
     
     ibus_lookup_table_clear(rtk->table);
     
@@ -203,8 +213,6 @@ static gboolean ibus_rtk_engine_lookup(IBusRTKEngine *rtk)
     }
     
     ibus_rtk_engine_update_lookup(rtk);
-    
-    return TRUE;
 }
 
 static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyval, guint keycode, guint modifiers)
@@ -238,8 +246,7 @@ static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyv
         }
         if(rtk->preedit->len)
         {
-            if(!ibus_rtk_engine_lookup(rtk))
-                ibus_rtk_engine_update_preedit(rtk, TRUE);
+            ibus_rtk_engine_lookup(rtk);
             return TRUE;
         }
         return FALSE;
@@ -260,7 +267,7 @@ static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyv
         {
 backspace:  rtk->cursor--;
             g_string_erase(rtk->preedit, rtk->cursor, 1);
-            ibus_rtk_engine_update_preedit(rtk, FALSE);
+            ibus_rtk_engine_update_preedit(rtk, 0);
             
             if(rtk->primitive_cursor > 0)
             {
@@ -312,7 +319,7 @@ backspace:  rtk->cursor--;
         if(rtk->cursor > 0)
         {
             rtk->cursor--;
-            ibus_rtk_engine_update_preedit(rtk, FALSE);
+            ibus_rtk_engine_update_preedit(rtk, 0);
             
             if(rtk->primitive_cursor > 0)
                 rtk->primitive_cursor--;
@@ -329,7 +336,7 @@ backspace:  rtk->cursor--;
         if(rtk->cursor < rtk->preedit->len)
         {
             rtk->cursor++;
-            ibus_rtk_engine_update_preedit(rtk, FALSE);
+            ibus_rtk_engine_update_preedit(rtk, 0);
             
             if(rtk->primitive_cursor < primitive_current(0)->len)
                 rtk->primitive_cursor++;
@@ -343,7 +350,7 @@ backspace:  rtk->cursor--;
     case IBUS_space:
         g_string_insert_c(rtk->preedit, rtk->cursor, IBUS_period);
         rtk->cursor++;
-        ibus_rtk_engine_update_preedit(rtk, FALSE);
+        ibus_rtk_engine_update_preedit(rtk, 0);
         
         tmpstr = g_string_new("");
         g_array_insert_val(rtk->primitives, rtk->primitive_current+1, tmpstr);
@@ -365,7 +372,7 @@ input:      g_string_insert_c(rtk->preedit, rtk->cursor, keyval);
             rtk->cursor++;
             g_string_insert_c(primitive_current(0), rtk->primitive_cursor, keyval);
             rtk->primitive_cursor++;
-            ibus_rtk_engine_update_preedit(rtk, FALSE);
+            ibus_rtk_engine_update_preedit(rtk, 0);
             return TRUE;
         }
     }

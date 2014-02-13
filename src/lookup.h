@@ -23,6 +23,11 @@
 #ifndef __LOOKUP_H__
 #define __LOOKUP_H__
 
+struct rtkinput
+{
+    char found, *primitive;
+};
+
 struct rtkresult
 {
     char *kanji, *meaning;
@@ -30,6 +35,6 @@ struct rtkresult
 
 int rtk_lookup_init(const char *file);
 void rtk_lookup_free();
-struct rtkresult* rtk_lookup(int argc, char *argv[]);
+struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv);
 
 #endif

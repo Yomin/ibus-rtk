@@ -21,11 +21,14 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "lookup.h"
 
 int main(int argc, char *argv[])
 {
+    struct rtkinput *input;
     struct rtkresult *result;
+    int x;
     
     if(argc < 3)
     {
@@ -36,15 +39,26 @@ int main(int argc, char *argv[])
     if(rtk_lookup_init(argv[1]))
         return 2;
     
-    result = rtk_lookup(argc-2, argv+2);
+    input = malloc((argc-2)*sizeof(struct rtkinput));
+    for(x=0; x<argc-2; x++)
+        input[x].primitive = argv[x+2];
+    
+    result = rtk_lookup(argc-2, input);
     
     if(result)
+    {
         while(result->kanji)
         {
             printf("found: %s %s\n", result->kanji, result->meaning);
             result++;
         }
+    }
+    else
+        for(x=0; x<argc-2; x++)
+            if(!input[x].found)
+                printf("not found: %s\n", input[x].primitive);
     
+    free(input);
     rtk_lookup_free();
     
     return 0;

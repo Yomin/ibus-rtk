@@ -44,7 +44,7 @@
 struct rtkprim
 {
     char **prim;
-    int count, cap, found;
+    int count, cap;
 };
 
 
@@ -132,7 +132,7 @@ int rtk_number(char *str)
     return 0;
 }
 
-struct rtkresult* rtk_lookup(int argc, char *argv[])
+struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
 {
     struct rtkprim *prim, ptmp1, ptmp2;
     int x, y, z, found, lnum;
@@ -160,10 +160,10 @@ struct rtkresult* rtk_lookup(int argc, char *argv[])
     {
         prim[x].count = 1;
         prim[x].cap = DEFAULT_CAP;
-        prim[x].found = 0;
         prim[x].prim = malloc(DEFAULT_CAP*sizeof(char**));
-        prim[x].prim[0] = malloc(strlen(argv[x])+1);
-        strcpy(prim[x].prim[0], argv[x]);
+        prim[x].prim[0] = malloc(strlen(argv[x].primitive)+1);
+        strcpy(prim[x].prim[0], argv[x].primitive);
+        argv[x].found = 0;
     }
     
     line = 0;
@@ -209,7 +209,7 @@ struct rtkresult* rtk_lookup(int argc, char *argv[])
                 if(!strcmp(prim[x].prim[0], ptmp1.prim[z]))
                 {
                     found = z;
-                    prim[x].found = 1;
+                    argv[x].found = 1;
                     for(z=0; z<ptmp1.count; z++)
                         if(z != found)
                             rtk_prim_add(ptmp1.prim[z], &prim[x]);
@@ -273,11 +273,7 @@ struct rtkresult* rtk_lookup(int argc, char *argv[])
     }
     
     for(x=0; x<argc; x++)
-    {
-        if(!prim[x].found)
-            print("primitive '%s' not found\n", prim[x].prim[0]);
         rtk_prim_free(&prim[x]);
-    }
     
     free(prim);
     free(line);
