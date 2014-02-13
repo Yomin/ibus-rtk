@@ -140,6 +140,9 @@ struct rtkresult* rtk_lookup(int argc, char *argv[])
     char *line, *tmpstr;
     char *num, *noprim, *kanji, *meaning, *alt, *kprim;
     
+    if(!argc)
+        return 0;
+    
     prim = malloc((argc)*sizeof(struct rtkprim));
     
     if(rtk_result_count)
