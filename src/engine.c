@@ -111,11 +111,19 @@ static void ibus_rtk_engine_reset(IBusRTKEngine *rtk)
 static void ibus_rtk_engine_update_preedit(IBusRTKEngine *rtk, gboolean red)
 {
     IBusText *text;
+    guint x, pos, len;
     
     text = ibus_text_new_from_static_string(rtk->preedit->str);
     text->attrs = ibus_attr_list_new();
-    ibus_attr_list_append(text->attrs,
-        ibus_attr_underline_new(IBUS_ATTR_UNDERLINE_SINGLE, 0, rtk->preedit->len));
+    
+    for(x=0, pos=0; x<rtk->primitive_count; x++)
+    {
+        len = g_array_index(rtk->primitives, GString*, x)->len;
+        ibus_attr_list_append(text->attrs,
+            ibus_attr_underline_new(IBUS_ATTR_UNDERLINE_SINGLE, pos, pos+len));
+        pos += len+1;
+    }
+    
     if(red)
         ibus_attr_list_append(text->attrs,
             ibus_attr_foreground_new(0xff0000, 0, rtk->preedit->len));
