@@ -20,6 +20,6 @@ AC_PROG_CC
 
 # Checks for library functions.
 
-AC_CONFIG_FILES([Makefile icons/Makefile src/Makefile])
+AC_CONFIG_FILES([Makefile icons/Makefile dicts/Makefile src/Makefile])
 
 AC_OUTPUT

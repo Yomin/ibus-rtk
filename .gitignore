@@ -13,6 +13,7 @@ stamp-h?
 .deps
 .dirstamp
 src/ibus-engine-rtk
+src/rtklookup
 src/rtk.xml
 *.o
 *.1

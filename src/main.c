@@ -24,12 +24,14 @@
 #include "engine.h"
 
 static gboolean ibus = FALSE;
-static gboolean verbose = FALSE;
+gboolean verbose = FALSE;
+gchar *dict = 0;
 
 static const GOptionEntry entries[] =
 {
     { "ibus", 'i', 0, G_OPTION_ARG_NONE, &ibus, "component is executed by ibus", NULL },
     { "verbose", 'v', 0, G_OPTION_ARG_NONE, &verbose, "verbose", NULL },
+    { "dict", 'd', 0, G_OPTION_ARG_FILENAME, &dict, "dictionary file", "dict" },
     { NULL }
 };
 
@@ -52,9 +54,18 @@ int main(int argc, char *argv[])
     
     if(!g_option_context_parse(context, &argc, &argv, &error))
     {
-        g_print("Option parsing failed: %s\n", error->message);
+        g_printerr("Failed to parse options: %s\n", error->message);
         g_error_free(error);
         return -1;
+    }
+    
+    if(!dict)
+        dict = PKGDATADIR "/dicts/primitives";
+    
+    if(!g_file_test(dict, G_FILE_TEST_EXISTS))
+    {
+        g_printerr("Failed to find dictionary '%s'\n", dict);
+        return -2;
     }
     
     ibus_init();

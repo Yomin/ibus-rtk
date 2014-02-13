@@ -1,8 +1,11 @@
 
 libexec_PROGRAMS = ibus-engine-rtk
-ibus_engine_rtk_SOURCES = main.c engine.c engine.h
-ibus_engine_rtk_CFLAGS = @IBUS_CFLAGS@
+ibus_engine_rtk_SOURCES = main.c engine.c engine.h lookup.c lookup.h
+ibus_engine_rtk_CFLAGS = @IBUS_CFLAGS@ -DIBUS_RTK -DPKGDATADIR=\"${pkgdatadir}\"
 ibus_engine_rtk_LDFLAGS = @IBUS_LIBS@
+
+noinst_PROGRAMS = rtklookup
+rtklookup_SOURCES = lookup.c lookup.h rtklookup.c
 
 component_DATA = rtk.xml
 componentdir = @datadir@/ibus/component
