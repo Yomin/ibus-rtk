@@ -205,7 +205,19 @@ static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyv
     GString *tmpstr;
     
     if(modifiers)
-        return rtk->cursor ? TRUE : FALSE;
+    {
+        if(modifiers & IBUS_RELEASE_MASK)
+            return FALSE;
+        
+        switch(keyval)
+        {
+        case IBUS_space:
+            if(modifiers & IBUS_SHIFT_MASK)
+                goto input;
+            break;
+        }
+        return rtk->preedit->len ? TRUE : FALSE;
+    }
     
     switch(keyval)
     {
@@ -341,7 +353,7 @@ backspace:  rtk->cursor--;
     default:
         if(is_alpha(keyval) || is_extra(keyval))
         {
-            g_string_insert_c(rtk->preedit, rtk->cursor, keyval);
+input:      g_string_insert_c(rtk->preedit, rtk->cursor, keyval);
             rtk->cursor++;
             g_string_insert_c(primitive_current(0), rtk->primitive_cursor, keyval);
             rtk->primitive_cursor++;
@@ -350,8 +362,5 @@ backspace:  rtk->cursor--;
         }
     }
     
-    if(rtk->preedit->len)
-        return TRUE;
-    
-    return FALSE;
+    return rtk->preedit->len ? TRUE : FALSE;
 }
