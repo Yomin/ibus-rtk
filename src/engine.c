@@ -33,8 +33,10 @@ typedef struct _IBusRTKEngineClass IBusRTKEngineClass;
 struct _IBusRTKEngine
 {
     IBusEngine parent;
+    IBusLookupTable *table;
     GString *preedit, *prekanji;
     gint cursor;
+    struct rtkresult *lookup;
 };
 
 struct _IBusRTKEngineClass
@@ -62,6 +64,8 @@ static void ibus_rtk_engine_init(IBusRTKEngine *rtk)
     rtk->preedit = g_string_new("");
     rtk->prekanji = g_string_new("");
     rtk->cursor = 0;
+    rtk->table = ibus_lookup_table_new(10, 0, TRUE, TRUE);
+    g_object_ref_sink(rtk->table);
     
     rtk_lookup_init(dict);
 }
@@ -72,6 +76,8 @@ static void ibus_rtk_engine_destroy(IBusRTKEngine *rtk)
         g_string_free(rtk->preedit, TRUE);
     if(rtk->prekanji)
         g_string_free(rtk->prekanji, TRUE);
+    if(rtk->table)
+        g_object_unref(rtk->table);
     rtk_lookup_free();
     ((IBusObjectClass*)ibus_rtk_engine_parent_class)->destroy((IBusObject*)rtk);
 }
@@ -83,6 +89,8 @@ static void ibus_rtk_engine_reset(IBusRTKEngine *rtk)
     rtk->cursor = 0;
     
     ibus_engine_hide_preedit_text((IBusEngine*)rtk);
+    ibus_engine_hide_auxiliary_text((IBusEngine*)rtk);
+    ibus_engine_hide_lookup_table((IBusEngine*)rtk);
 }
 
 static void ibus_rtk_engine_update_preedit(IBusRTKEngine *rtk, gboolean red)
@@ -100,6 +108,8 @@ static void ibus_rtk_engine_update_preedit(IBusRTKEngine *rtk, gboolean red)
     ibus_engine_update_preedit_text((IBusEngine*)rtk, text, rtk->cursor, TRUE);
     
     g_string_assign(rtk->prekanji, "");
+    ibus_engine_hide_auxiliary_text((IBusEngine*)rtk);
+    ibus_engine_hide_lookup_table((IBusEngine*)rtk);
 }
 
 static void ibus_rtk_engine_update_prekanji(IBusRTKEngine *rtk)
@@ -109,6 +119,7 @@ static void ibus_rtk_engine_update_prekanji(IBusRTKEngine *rtk)
     text = ibus_text_new_from_static_string(rtk->prekanji->str);
     
     ibus_engine_update_preedit_text((IBusEngine*)rtk, text, rtk->prekanji->len, TRUE);
+    ibus_engine_show_lookup_table((IBusEngine*)rtk);
 }
 
 static gboolean ibus_rtk_engine_commit(IBusRTKEngine *rtk, GString *str)
@@ -126,15 +137,40 @@ static gboolean ibus_rtk_engine_commit(IBusRTKEngine *rtk, GString *str)
     return TRUE;
 }
 
+static void ibus_rtk_engine_update_lookup(IBusRTKEngine *rtk)
+{
+    IBusText *text;
+    guint pos;
+    
+    pos = ibus_lookup_table_get_cursor_pos(rtk->table);
+    text = ibus_text_new_from_printf("%i / %i", pos+1,
+        ibus_lookup_table_get_number_of_candidates(rtk->table));
+    
+    g_string_assign(rtk->prekanji, rtk->lookup[pos].kanji);
+    ibus_rtk_engine_update_prekanji(rtk);
+    
+    ibus_engine_update_auxiliary_text((IBusEngine*)rtk, text, TRUE);
+    ibus_engine_update_lookup_table((IBusEngine*)rtk, rtk->table, TRUE);
+}
+
 static gboolean ibus_rtk_engine_lookup(IBusRTKEngine *rtk)
 {
     IBusText *text;
-    struct rtkresult *result = rtk_lookup(1, &rtk->preedit->str);
+    struct rtkresult *result;
     
-    if(!result)
+    if(!(rtk->lookup = result = rtk_lookup(1, &rtk->preedit->str)))
         return FALSE;
     
-    g_string_assign(rtk->prekanji, result->kanji);
+    ibus_lookup_table_clear(rtk->table);
+    
+    while(result->kanji)
+    {
+        text = ibus_text_new_from_printf("%s: %s", result->kanji, result->meaning);
+        ibus_lookup_table_append_candidate(rtk->table, text);
+        result++;
+    }
+    
+    ibus_rtk_engine_update_lookup(rtk);
     
     return TRUE;
 }
@@ -149,12 +185,16 @@ static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyv
     switch(keyval)
     {
     case IBUS_space:
+        if(rtk->prekanji->len)
+        {
+            ibus_lookup_table_cursor_down(rtk->table);
+            ibus_rtk_engine_update_lookup(rtk);
+            return TRUE;
+        }
         if(rtk->preedit->len)
         {
             if(!ibus_rtk_engine_lookup(rtk))
                 ibus_rtk_engine_update_preedit(rtk, TRUE);
-            else
-                ibus_rtk_engine_update_prekanji(rtk);
             return TRUE;
         }
         return FALSE;
@@ -186,6 +226,18 @@ static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyv
             g_string_erase(rtk->preedit, rtk->cursor, 1);
             ibus_rtk_engine_update_preedit(rtk, FALSE);
         }
+        return TRUE;
+    case IBUS_Down:
+        if(!rtk->prekanji->len)
+            return FALSE;
+        ibus_lookup_table_cursor_down(rtk->table);
+        ibus_rtk_engine_update_lookup(rtk);
+        return TRUE;
+    case IBUS_Up:
+        if(!rtk->prekanji->len)
+            return FALSE;
+        ibus_lookup_table_cursor_up(rtk->table);
+        ibus_rtk_engine_update_lookup(rtk);
         return TRUE;
     default:
         if(is_alpha(keyval))
