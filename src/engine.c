@@ -240,13 +240,86 @@ static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyv
         if(modifiers & IBUS_RELEASE_MASK)
             return FALSE;
         
-        switch(keyval)
+        if(modifiers & IBUS_SHIFT_MASK)
         {
-        case IBUS_space:
-            if(modifiers & IBUS_SHIFT_MASK)
+            switch(keyval)
+            {
+            case IBUS_space:
                 goto input;
-            break;
+            }
         }
+        
+        if(modifiers & IBUS_CONTROL_MASK)
+        {
+            switch(keyval)
+            {
+            case IBUS_w:
+                if(rtk->primitive_cursor > 0)
+                {
+                    rtk->cursor -= rtk->primitive_cursor;
+                    g_string_erase(rtk->preedit, rtk->cursor, rtk->primitive_cursor);
+                    g_string_erase(primitive_current(0), 0, rtk->primitive_cursor);
+                    rtk->primitive_cursor = 0;
+                    ibus_rtk_engine_update_preedit(rtk, 0);
+                }
+                else if(rtk->primitive_current > 0)
+                {
+                    tmpstr = primitive_current(-1);
+                    rtk->cursor -= tmpstr->len+1;
+                    g_string_erase(rtk->preedit, rtk->cursor, tmpstr->len+1);
+                    g_array_remove_index(rtk->primitives, rtk->primitive_current-1);
+                    rtk->primitive_count--;
+                    rtk->primitive_current--;
+                    ibus_rtk_engine_update_preedit(rtk, 0);
+                }
+                break;
+            case IBUS_u:
+                g_string_erase(rtk->preedit, 0, rtk->cursor);
+                rtk->cursor = 0;
+                g_string_erase(primitive_current(0), 0, rtk->primitive_cursor);
+                rtk->primitive_cursor = 0;
+                g_array_remove_range(rtk->primitives, 0, rtk->primitive_current);
+                rtk->primitive_count -= rtk->primitive_current;
+                rtk->primitive_current = 0;
+                ibus_rtk_engine_update_preedit(rtk, 0);
+                break;
+            case IBUS_a:
+                goto home;
+            case IBUS_e:
+                goto end;
+            case IBUS_Left:
+                if(rtk->primitive_cursor > 0)
+                {
+                    rtk->cursor -= rtk->primitive_cursor;
+                    rtk->primitive_cursor = 0;
+                    ibus_rtk_engine_update_preedit(rtk, 0);
+                }
+                else if(rtk->primitive_current > 0)
+                {
+                    rtk->primitive_current--;
+                    rtk->cursor -= primitive_current(0)->len+1;
+                    ibus_rtk_engine_update_preedit(rtk, 0);
+                }
+                break;
+            case IBUS_Right:
+                if(rtk->primitive_current == rtk->primitive_count-1)
+                {
+                    rtk->cursor = rtk->preedit->len;
+                    rtk->primitive_cursor = primitive_current(0)->len;
+                    ibus_rtk_engine_update_preedit(rtk, 0);
+                }
+                else
+                {
+                    rtk->cursor += primitive_current(0)->len -
+                        rtk->primitive_cursor + 1;
+                    rtk->primitive_current++;
+                    rtk->primitive_cursor = 0;
+                    ibus_rtk_engine_update_preedit(rtk, 0);
+                }
+                break;
+            }
+        }
+        
         return rtk->preedit->len ? TRUE : FALSE;
     }
     
@@ -380,6 +453,18 @@ backspace:  rtk->cursor--;
         rtk->primitive_current++;
         rtk->primitive_cursor = 0;
         return TRUE;
+    case IBUS_Home:
+home:   rtk->cursor = 0;
+        rtk->primitive_current = 0;
+        rtk->primitive_cursor = 0;
+        ibus_rtk_engine_update_preedit(rtk, 0);
+        break;
+    case IBUS_End:
+end:    rtk->cursor = rtk->preedit->len;
+        rtk->primitive_current = rtk->primitive_count-1;
+        rtk->primitive_cursor = primitive_current(0)->len;
+        ibus_rtk_engine_update_preedit(rtk, 0);
+        break;
     default:
         if(is_alpha(keyval) || is_extra(keyval))
         {
