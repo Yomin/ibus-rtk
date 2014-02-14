@@ -266,8 +266,10 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
                     rtk_prim_add(ptmp1.prim[z], &prim[x]);
             }
             // mark found if meaning == user entered primitive
-            else if(!strcmp(prim[x].prim[0], meaning))
-                found++;
+            else
+                for(y=0; y<ptmp1.count; y++)
+                    if(!strcmp(prim[x].prim[0], ptmp1.prim[y]))
+                        found++;
         }
         
         // if for every primitve list a matching one is found
