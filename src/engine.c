@@ -168,19 +168,14 @@ static void ibus_rtk_engine_update_prekanji(IBusRTKEngine *rtk)
     ibus_engine_show_lookup_table((IBusEngine*)rtk);
 }
 
-static gboolean ibus_rtk_engine_commit(IBusRTKEngine *rtk, GString *str)
+static void ibus_rtk_engine_commit(IBusRTKEngine *rtk, GString *str)
 {
     IBusText *text;
-    
-    if(!str->len)
-        return FALSE;
     
     text = ibus_text_new_from_static_string(str->str);
     ibus_engine_commit_text((IBusEngine*)rtk, text);
     
     ibus_rtk_engine_reset(rtk);
-    
-    return TRUE;
 }
 
 static void ibus_rtk_engine_update_lookup(IBusRTKEngine *rtk)
@@ -237,6 +232,7 @@ static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyv
 {
     IBusRTKEngine *rtk = (IBusRTKEngine*)engine;
     GString *tmpstr;
+    gboolean ret = rtk->preedit->len;
     
     if(modifiers)
     {
@@ -323,7 +319,7 @@ static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyv
             }
         }
         
-        return rtk->preedit->len ? TRUE : FALSE;
+        return ret;
     }
     
     switch(keyval)
@@ -333,28 +329,22 @@ static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyv
         {
             ibus_lookup_table_cursor_down(rtk->table);
             ibus_rtk_engine_update_lookup(rtk);
-            return TRUE;
         }
-        if(rtk->preedit->len)
-        {
+        else if(rtk->preedit->len)
             ibus_rtk_engine_lookup(rtk);
-            return TRUE;
-        }
-        return FALSE;
+        break;
     case IBUS_Return:
         if(rtk->prekanji->len)
-            return ibus_rtk_engine_commit(rtk, rtk->prekanji);
+            ibus_rtk_engine_commit(rtk, rtk->prekanji);
         else
-            return ibus_rtk_engine_commit(rtk, rtk->preedit);
+            ibus_rtk_engine_commit(rtk, rtk->preedit);
+        break;
     case IBUS_Escape:
-        if(!rtk->preedit->len)
-            return FALSE;
-        ibus_rtk_engine_reset(rtk);
-        return TRUE;
+        if(rtk->preedit->len)
+            ibus_rtk_engine_reset(rtk);
+        break;
     case IBUS_BackSpace:
-        if(!rtk->preedit->len)
-            return FALSE;
-        if(rtk->cursor > 0)
+        if(rtk->preedit->len && rtk->cursor > 0)
         {
 backspace:  rtk->cursor--;
             g_string_erase(rtk->preedit, rtk->cursor, 1);
@@ -375,11 +365,9 @@ backspace:  rtk->cursor--;
             }
             ibus_rtk_engine_update_preedit(rtk, 0);
         }
-        return TRUE;
+        break;
     case IBUS_Delete:
-        if(!rtk->preedit->len)
-            return FALSE;
-        if(rtk->cursor < rtk->preedit->len)
+        if(rtk->preedit->len && rtk->cursor < rtk->preedit->len)
         {
             rtk->cursor++;
             if(rtk->primitive_cursor == primitive_current(0)->len)
@@ -391,23 +379,23 @@ backspace:  rtk->cursor--;
                 rtk->primitive_cursor++;
             goto backspace;
         }
-        return TRUE;
+        break;
     case IBUS_Down:
-        if(!rtk->prekanji->len)
-            return FALSE;
-        ibus_lookup_table_cursor_down(rtk->table);
-        ibus_rtk_engine_update_lookup(rtk);
-        return TRUE;
+        if(rtk->prekanji->len)
+        {
+            ibus_lookup_table_cursor_down(rtk->table);
+            ibus_rtk_engine_update_lookup(rtk);
+        }
+        break;
     case IBUS_Up:
-        if(!rtk->prekanji->len)
-            return FALSE;
-        ibus_lookup_table_cursor_up(rtk->table);
-        ibus_rtk_engine_update_lookup(rtk);
-        return TRUE;
+        if(rtk->prekanji->len)
+        {
+            ibus_lookup_table_cursor_up(rtk->table);
+            ibus_rtk_engine_update_lookup(rtk);
+        }
+        break;
     case IBUS_Left:
-        if(!rtk->preedit->len)
-            return FALSE;
-        if(rtk->cursor > 0)
+        if(rtk->preedit->len && rtk->cursor > 0)
         {
             rtk->cursor--;
             ibus_rtk_engine_update_preedit(rtk, 0);
@@ -420,11 +408,9 @@ backspace:  rtk->cursor--;
                 rtk->primitive_cursor = primitive_current(0)->len;
             }
         }
-        return TRUE;
+        break;
     case IBUS_Right:
-        if(!rtk->preedit->len)
-            return FALSE;
-        if(rtk->cursor < rtk->preedit->len)
+        if(rtk->preedit->len && rtk->cursor < rtk->preedit->len)
         {
             rtk->cursor++;
             ibus_rtk_engine_update_preedit(rtk, 0);
@@ -437,7 +423,7 @@ backspace:  rtk->cursor--;
                 rtk->primitive_cursor = 0;
             }
         }
-        return TRUE;
+        break;
     case IBUS_space:
         g_string_insert_c(rtk->preedit, rtk->cursor, IBUS_period);
         rtk->cursor++;
@@ -480,5 +466,5 @@ input:      g_string_insert_c(rtk->preedit, rtk->cursor, keyval);
         }
     }
     
-    return rtk->preedit->len ? TRUE : FALSE;
+    return ret;
 }
