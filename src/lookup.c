@@ -135,7 +135,7 @@ int rtk_number(char *str)
 struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
 {
     struct rtkprim *prim, ptmp1, ptmp2;
-    int x, y, z, found, lnum;
+    int x, y, z, found, foundpos, lnum;
     size_t n;
     char *line, *tmpstr;
     char *num, *noprim, *kanji, *meaning, *alt, *kprim;
@@ -203,23 +203,30 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
         // if the primitive is found in the meaning or alt meanings
         // add those except the one found to the respective
         // primitive list
-        found = -1;
+        found = 0;
+        foundpos = -1;
         for(x=0; x<argc; x++)
             for(z=0; z<ptmp1.count; z++)
                 if(!strcmp(prim[x].prim[0], ptmp1.prim[z]))
                 {
-                    found = z;
+                    found++;
                     argv[x].found = 1;
-                    for(z=0; z<ptmp1.count; z++)
-                        if(z != found)
-                            rtk_prim_add(ptmp1.prim[z], &prim[x]);
-                    x = argc;
+                    if(found == 1)
+                    {
+                        foundpos = z;
+                        for(z=0; z<ptmp1.count; z++)
+                            if(z != foundpos)
+                                rtk_prim_add(ptmp1.prim[z], &prim[x]);
+                    }
                     break;
                 }
         
         // continue if no sub primitives
         if(kprim[0] == '-' && kprim[1] == '\n')
         {
+            if(found == argc && rtk_number(num))
+                rtk_result_add(kanji, meaning);
+            
             rtk_prim_free(&ptmp1);
             continue;
         }
