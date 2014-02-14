@@ -54,6 +54,7 @@ struct _IBusRTKEngineClass
 static void ibus_rtk_engine_class_init(IBusRTKEngineClass *klass);
 static void ibus_rtk_engine_init(IBusRTKEngine *rtk);
 static void ibus_rtk_engine_destroy(IBusRTKEngine *rtk);
+static void ibus_rtk_engine_focus_in(IBusEngine *engine);
 static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyval, guint keycode, guint modifiers);
 
 
@@ -63,6 +64,7 @@ static void ibus_rtk_engine_class_init(IBusRTKEngineClass *klass)
 {
     IBUS_OBJECT_CLASS(klass)->destroy = (IBusObjectDestroyFunc)ibus_rtk_engine_destroy;
     IBUS_ENGINE_CLASS(klass)->process_key_event = ibus_rtk_engine_process_key_event;
+    IBUS_ENGINE_CLASS(klass)->focus_in = ibus_rtk_engine_focus_in;
 }
 
 static void ibus_rtk_engine_primitive_free(gpointer data)
@@ -467,4 +469,9 @@ input:      g_string_insert_c(rtk->preedit, rtk->cursor, keyval);
     }
     
     return ret;
+}
+
+static void ibus_rtk_engine_focus_in(IBusEngine *engine)
+{
+    ibus_rtk_engine_update_preedit((IBusRTKEngine*)engine, 0);
 }
