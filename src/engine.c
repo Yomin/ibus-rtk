@@ -303,18 +303,19 @@ static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyv
                 }
                 break;
             case IBUS_Right:
-                if(rtk->primitive_current == rtk->primitive_count-1)
+                tmpstr = primitive_current(0);
+                if(rtk->primitive_cursor < tmpstr->len)
                 {
-                    rtk->cursor = rtk->preedit->len;
-                    rtk->primitive_cursor = primitive_current(0)->len;
+                    rtk->cursor += tmpstr->len - rtk->primitive_cursor;
+                    rtk->primitive_cursor = tmpstr->len;
                     ibus_rtk_engine_update_preedit(rtk, 0);
                 }
-                else
+                else if(rtk->primitive_current < rtk->primitive_count-1)
                 {
-                    rtk->cursor += primitive_current(0)->len -
-                        rtk->primitive_cursor + 1;
+                    rtk->cursor += tmpstr->len - rtk->primitive_cursor +1;
                     rtk->primitive_current++;
-                    rtk->primitive_cursor = 0;
+                    rtk->primitive_cursor = primitive_current(0)->len;
+                    rtk->cursor += rtk->primitive_cursor;
                     ibus_rtk_engine_update_preedit(rtk, 0);
                 }
                 break;

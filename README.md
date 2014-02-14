@@ -26,7 +26,7 @@ ibus-rtk is found in the IBus Input Method list below Japanese.
        | home   | move cursor to begin of floating text
        | end    | move cursor to end of floating text
  ctrl  | left   | move cursor to primitive begin or begin of left primitive
- ctrl  | right  | move cursor to primitive end or begin of right primitive
+ ctrl  | right  | move cursor to primitive end or end of right primitive
  ctrl  | a      | same as home key
  ctrl  | e      | same as end key
  ctrl  | w      | remove floating text to primitive begin or begin of left primitive
