@@ -27,7 +27,6 @@
 #include "lookup.h"
 
 #define is_alpha(c) (((c) >= IBUS_a && (c) <= IBUS_z) || ((c) >= IBUS_A && (c) <= IBUS_Z))
-#define is_extra(c) ((c) == IBUS_period || (c) == IBUS_minus)
 #define primitive_current(n) (g_array_index(rtk->primitives, GString*, rtk->primitive_current+(n)))
 
 extern gchar *dict;
@@ -246,7 +245,12 @@ static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyv
             switch(keyval)
             {
             case IBUS_space:
+            case IBUS_period:
+            case IBUS_minus:
                 goto input;
+            default:
+                if(is_alpha(keyval))
+                    goto input;
             }
         }
         
@@ -457,8 +461,11 @@ end:    rtk->cursor = rtk->preedit->len;
         rtk->primitive_cursor = primitive_current(0)->len;
         ibus_rtk_engine_update_preedit(rtk, 0);
         break;
+    case IBUS_period:
+    case IBUS_minus:
+        goto input;
     default:
-        if(is_alpha(keyval) || is_extra(keyval))
+        if(is_alpha(keyval))
         {
 input:      g_string_insert_c(rtk->preedit, rtk->cursor, keyval);
             rtk->cursor++;
