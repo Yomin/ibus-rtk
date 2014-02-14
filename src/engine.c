@@ -62,6 +62,11 @@ static void ibus_rtk_engine_class_init(IBusRTKEngineClass *klass)
     IBUS_ENGINE_CLASS(klass)->process_key_event = ibus_rtk_engine_process_key_event;
 }
 
+static void ibus_rtk_engine_primitive_free(gpointer data)
+{
+    g_string_free(*(GString**)data, TRUE);
+}
+
 static void ibus_rtk_engine_init(IBusRTKEngine *rtk)
 {
     GString *str;
@@ -79,6 +84,7 @@ static void ibus_rtk_engine_init(IBusRTKEngine *rtk)
     rtk->primitive_count = 1;
     rtk->primitive_current = 0;
     rtk->primitive_cursor = 0;
+    g_array_set_clear_func(rtk->primitives, ibus_rtk_engine_primitive_free);
     
     rtk_lookup_init(dict);
 }
@@ -99,9 +105,18 @@ static void ibus_rtk_engine_destroy(IBusRTKEngine *rtk)
 
 static void ibus_rtk_engine_reset(IBusRTKEngine *rtk)
 {
+    guint x;
+    
     g_string_assign(rtk->preedit, "");
     g_string_assign(rtk->prekanji, "");
     rtk->cursor = 0;
+    
+    if(rtk->primitive_count > 1)
+        g_array_remove_range(rtk->primitives, 1, rtk->primitive_count-1);
+    rtk->primitive_count = 1;
+    rtk->primitive_current = 0;
+    rtk->primitive_cursor = 0;
+    g_string_assign(primitive_current(0), "");
     
     ibus_engine_hide_preedit_text((IBusEngine*)rtk);
     ibus_engine_hide_auxiliary_text((IBusEngine*)rtk);
@@ -267,7 +282,6 @@ static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyv
         {
 backspace:  rtk->cursor--;
             g_string_erase(rtk->preedit, rtk->cursor, 1);
-            ibus_rtk_engine_update_preedit(rtk, 0);
             
             if(rtk->primitive_cursor > 0)
             {
@@ -283,6 +297,7 @@ backspace:  rtk->cursor--;
                 rtk->primitive_count--;
                 rtk->primitive_current--;
             }
+            ibus_rtk_engine_update_preedit(rtk, 0);
         }
         return TRUE;
     case IBUS_Delete:
