@@ -1,0 +1,39 @@
+
+Name:       @PACKAGE_NAME@
+Version:    @PACKAGE_VERSION@
+Release:    1%{?dist}
+Summary:    IBus RTK engine
+License:    MIT
+Group:      System Envirionment/Libraries
+URL:        @PACKAGE_URL@
+Source:     @PACKAGE_NAME@-@PACKAGE_VERSION@.tar.gz
+
+Requires:   ibus
+
+%description
+IBus RTK engine.
+
+%prep
+%setup -q
+
+%build
+%configure --disable-static
+make %{?_smp_mflags}
+
+%install
+rm -rf $RPM_BUILD_ROOT
+make DESTDIR=${RPM_BUILD_ROOT} install
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root,-)
+%doc %{_defaultdocdir}/ibus-rtk/README.md
+%{_datadir}/ibus-rtk
+%{_datadir}/ibus/component/rtk.xml
+%{_libexecdir}/ibus-engine-rtk
+
+%changelog
+* Sat Feb 15 2014 Martin Rödel aka Yomin <lordyomin@hivegate.net> - 1.x
+- Please refer to the git commit history.

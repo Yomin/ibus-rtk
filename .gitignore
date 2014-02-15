@@ -12,6 +12,9 @@ missing
 stamp-h?
 .deps
 .dirstamp
+ibus-rtk-*
+ibus-rtk.spec
+i686
 src/ibus-engine-rtk
 src/rtklookup
 src/rtk.xml
