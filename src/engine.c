@@ -243,6 +243,7 @@ static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyv
     IBusRTKEngine *rtk = (IBusRTKEngine*)engine;
     GString *tmpstr;
     gboolean ret = rtk->preedit->len;
+    guint x;
     
     if(modifiers)
     {
@@ -353,7 +354,16 @@ static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyv
         if(rtk->prekanji->len)
             ibus_rtk_engine_commit(rtk, rtk->prekanji);
         else
+        {
+            g_string_truncate(rtk->preedit, 0);
+            if(rtk->primitive_count)
+                 g_string_append(rtk->preedit,
+                    g_array_index(rtk->primitives, GString*, 0)->str);
+            for(x=1; x<rtk->primitive_count; x++)
+                 g_string_append_printf(rtk->preedit, " %s",
+                    g_array_index(rtk->primitives, GString*, x)->str);
             ibus_rtk_engine_commit(rtk, rtk->preedit);
+        }
         break;
     case IBUS_Escape:
         if(rtk->preedit->len)
