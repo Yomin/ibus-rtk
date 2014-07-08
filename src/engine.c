@@ -221,7 +221,7 @@ static void ibus_rtk_engine_lookup(IBusRTKEngine *rtk)
     
     while(result->kanji)
     {
-        text = ibus_text_new_from_printf("%s: %s", result->kanji, result->meaning);
+        text = ibus_text_new_from_printf("[%i] %s %s", result->number, result->kanji, result->meaning);
         ibus_lookup_table_append_candidate(rtk->table, text);
         result++;
     }

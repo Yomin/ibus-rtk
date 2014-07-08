@@ -30,6 +30,7 @@ struct rtkinput
 
 struct rtkresult
 {
+    unsigned short int number;
     char *kanji, *meaning;
 };
 

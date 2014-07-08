@@ -53,7 +53,7 @@ struct rtkresult *rtk_results;
 int rtk_result_count, rtk_result_cap;
 
 
-void rtk_result_add(char *kanji, char *meaning)
+void rtk_result_add(int number, char *kanji, char *meaning)
 {
     if(rtk_result_count == rtk_result_cap-1)
     {
@@ -61,6 +61,7 @@ void rtk_result_add(char *kanji, char *meaning)
         rtk_results = realloc(rtk_results, rtk_result_cap*sizeof(struct rtkresult));
         memset(rtk_results+rtk_result_count, 0, (rtk_result_cap-rtk_result_count)*sizeof(struct rtkresult));
     }
+    rtk_results[rtk_result_count].number = number;
     rtk_results[rtk_result_count].kanji = strdup(kanji);
     rtk_results[rtk_result_count].meaning = strdup(meaning);
     rtk_result_count++;
@@ -225,7 +226,7 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
         if(kprim[0] == '-' && kprim[1] == '\n')
         {
             if(found == argc && rtk_number(num))
-                rtk_result_add(kanji, meaning);
+                rtk_result_add(atoi(num), kanji, meaning);
             
             rtk_prim_free(&ptmp1);
             continue;
@@ -275,7 +276,7 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
         // if for every primitve list a matching one is found
         // and the current kanji is not numberless
         if(found == argc && rtk_number(num))
-            rtk_result_add(kanji, meaning);
+            rtk_result_add(atoi(num), kanji, meaning);
         
         rtk_prim_free(&ptmp1);
         rtk_prim_free(&ptmp2);
