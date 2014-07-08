@@ -194,7 +194,7 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
         // create list of meaning and alternative meanings
         rtk_prim_add(meaning, &ptmp1);
         tmpstr = strtok(alt, "/");
-        while(tmpstr && tmpstr[0] != '-' && tmpstr[1])
+        while(tmpstr && (tmpstr[0] != '-' || tmpstr[1]))
         {
             rtk_prim_add(tmpstr, &ptmp1);
             tmpstr = strtok(0, "/");
