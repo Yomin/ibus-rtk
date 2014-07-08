@@ -74,6 +74,9 @@ static void ibus_rtk_engine_primitive_free(gpointer data)
 static void ibus_rtk_engine_init(IBusRTKEngine *rtk)
 {
     GString *str;
+    IBusText *text;
+    const char *labels[] = {"一", "二", "三", "四", "五", "六", "七", "八", "九", "十", 0};
+    char **label = (char**)labels;
     
     rtk->preedit = g_string_new("");
     rtk->prekanji = g_string_new("");
@@ -81,6 +84,12 @@ static void ibus_rtk_engine_init(IBusRTKEngine *rtk)
     
     rtk->table = ibus_lookup_table_new(10, 0, TRUE, TRUE);
     g_object_ref_sink(rtk->table);
+    
+    while(*label)
+    {
+        text = ibus_text_new_from_printf("%s", *(label++));
+        ibus_lookup_table_append_label(rtk->table, text);
+    }
     
     rtk->primitives = g_array_new(FALSE, FALSE, sizeof(GString*));
     str = g_string_new("");
