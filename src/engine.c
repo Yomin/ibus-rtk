@@ -455,6 +455,8 @@ backspace:  rtk->cursor--;
         }
         break;
     case IBUS_space:
+        if(!rtk->preedit->len || !rtk->cursor)
+            break;
         g_string_insert_c(rtk->preedit, rtk->cursor, IBUS_period);
         rtk->cursor++;
         ibus_rtk_engine_update_preedit(rtk, 0);
