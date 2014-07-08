@@ -401,6 +401,20 @@ backspace:  rtk->cursor--;
             ibus_rtk_engine_update_lookup(rtk);
         }
         break;
+    case IBUS_Page_Down:
+        if(rtk->prekanji->len)
+        {
+            ibus_lookup_table_page_down(rtk->table);
+            ibus_rtk_engine_update_lookup(rtk);
+        }
+        break;
+    case IBUS_Page_Up:
+        if(rtk->prekanji->len)
+        {
+            ibus_lookup_table_page_up(rtk->table);
+            ibus_rtk_engine_update_lookup(rtk);
+        }
+        break;
     case IBUS_Left:
         if(rtk->preedit->len && rtk->cursor > 0)
         {
