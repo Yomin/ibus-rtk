@@ -136,10 +136,10 @@ int rtk_number(char *str)
 struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
 {
     struct rtkprim *prim, ptmp1, ptmp2;
-    int x, y, z, found, foundpos, lnum;
+    int x, y, z, found, foundpos, lnum, skip;
     size_t n;
     char *line, *tmpstr;
-    char *num, *noprim, *kanji, *meaning, *alt, *kprim;
+    char *num, *pskip, *kanji, *meaning, *alt, *kprim;
     
     if(!argc)
         return 0;
@@ -176,7 +176,7 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
         if(*line == '\n' || *line == '#')
             continue;
         if(    !(num = strtok(line, ":"))
-            || !(noprim = strtok(0, ":"))
+            || !(pskip = strtok(0, ":"))
             || !(kanji = strtok(0, ":"))
             || !(meaning = strtok(0, ":"))
             || !(alt = strtok(0, ":"))
@@ -200,6 +200,9 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
             tmpstr = strtok(0, "/");
         }
         
+        // ignore meaning/alternatives
+        skip = rtk_number(pskip);
+        
         // for every user entered primitive
         // if the primitive is found in the meaning or alt meanings
         // add those except the one found to the respective
@@ -212,10 +215,13 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
                 {
                     found++;
                     argv[x].found = 1;
-                    if(found == 1)
+                    
+                    // only add if found meaning/alt not skipped
+                    // and add only those which are not skipped
+                    if(found == 1 && z >= skip)
                     {
                         foundpos = z;
-                        for(z=0; z<ptmp1.count; z++)
+                        for(z=skip; z<ptmp1.count; z++)
                             if(z != foundpos)
                                 rtk_prim_add(ptmp1.prim[z], &prim[x]);
                     }
@@ -262,8 +268,8 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
                     }
             if(z == -1)
             {
-                // skip meaning if already defined as primitive
-                for(z=noprim[0]=='1'?1:0; z<ptmp1.count; z++)
+                // skip meaning/alt if already defined as primitive/alt
+                for(z=skip; z<ptmp1.count; z++)
                     rtk_prim_add(ptmp1.prim[z], &prim[x]);
             }
             // mark found if meaning == user entered primitive
