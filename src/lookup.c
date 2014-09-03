@@ -102,7 +102,7 @@ char* rtk_norm(char *str)
     return str;
 }
 
-void rtk_prim_add(char *str, struct rtkprim *p)
+void rtk_prim_add(char *str, struct rtkprim *p, int norm)
 {
     int len = strlen(str);
     
@@ -121,7 +121,8 @@ void rtk_prim_add(char *str, struct rtkprim *p)
     p->prim[p->count] = strdup(str);
     p->count++;
     
-    rtk_norm(p->prim[p->count-1]);
+    if(norm)
+        rtk_norm(p->prim[p->count-1]);
 }
 
 void rtk_prim_free(struct rtkprim *p)
@@ -229,11 +230,11 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
         ptmp1.prim = malloc(DEFAULT_CAP*sizeof(char**));
         
         // create list of meaning and alternative meanings
-        rtk_prim_add(meaning, &ptmp1);
+        rtk_prim_add(meaning, &ptmp1, 1);
         tmpstr = strtok(alt, "/");
         while(tmpstr && (tmpstr[0] != '-' || tmpstr[1]))
         {
-            rtk_prim_add(tmpstr, &ptmp1);
+            rtk_prim_add(tmpstr, &ptmp1, 1);
             tmpstr = strtok(0, "/");
         }
         
@@ -260,7 +261,7 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
                         foundpos = z;
                         for(z=skip; z<ptmp1.count; z++)
                             if(z != foundpos)
-                                rtk_prim_add(ptmp1.prim[z], &prim[x]);
+                                rtk_prim_add(ptmp1.prim[z], &prim[x], 0);
                     }
                     break;
                 }
@@ -282,7 +283,7 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
         tmpstr = strtok(kprim, "/");
         while(tmpstr)
         {
-            rtk_prim_add(tmpstr, &ptmp2);
+            rtk_prim_add(tmpstr, &ptmp2, 1);
             tmpstr = strtok(0, "/");
         }
         
@@ -307,7 +308,7 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
             {
                 // skip meaning/alt if already defined as primitive/alt
                 for(z=skip; z<ptmp1.count; z++)
-                    rtk_prim_add(ptmp1.prim[z], &prim[x]);
+                    rtk_prim_add(ptmp1.prim[z], &prim[x], 0);
             }
             // mark found if meaning == user entered primitive
             else
