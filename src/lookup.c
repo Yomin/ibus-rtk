@@ -67,6 +67,41 @@ void rtk_result_add(int number, char *kanji, char *meaning)
     rtk_result_count++;
 }
 
+char* rtk_norm(char *str)
+{
+    char *s = str;
+    
+    // substitute upper for lower characters
+    // and special characters with whitespace
+    while(*s)
+    {
+        if(*s >= 'A' && *s <= 'Z')
+            *s += 32;
+        else switch(*s)
+        {
+        case '-':
+        case '.':
+        case '?':
+        case '\'':
+            *s = ' ';
+        }
+        ++s;
+    }
+    
+    // remove trailing whitespace
+    --s;
+    while(*s == ' ' && s >= str)
+        *s-- = 0;
+    
+    // remove plural 's'
+    // non plural words are severed but two primitives
+    // should not differ by only the trailing 's'
+    if(*s == 's')
+        *s = 0;
+    
+    return str;
+}
+
 void rtk_prim_add(char *str, struct rtkprim *p)
 {
     int len = strlen(str);
@@ -85,6 +120,8 @@ void rtk_prim_add(char *str, struct rtkprim *p)
     
     p->prim[p->count] = strdup(str);
     p->count++;
+    
+    rtk_norm(p->prim[p->count-1]);
 }
 
 void rtk_prim_free(struct rtkprim *p)
@@ -162,8 +199,8 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
         prim[x].count = 1;
         prim[x].cap = DEFAULT_CAP;
         prim[x].prim = malloc(DEFAULT_CAP*sizeof(char**));
-        prim[x].prim[0] = malloc(strlen(argv[x].primitive)+1);
-        strcpy(prim[x].prim[0], argv[x].primitive);
+        prim[x].prim[0] = strdup(argv[x].primitive);
+        rtk_norm(prim[x].prim[0]);
         argv[x].found = 0;
     }
     
@@ -281,7 +318,7 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
         
         // if for every primitve list a matching one is found
         // and the current kanji is not numberless
-        if(found == argc && rtk_number(num))
+        if(found >= argc && rtk_number(num))
             rtk_result_add(atoi(num), kanji, meaning);
         
         rtk_prim_free(&ptmp1);
