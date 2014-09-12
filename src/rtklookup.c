@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
     {
         while(result->kanji)
         {
-            printf("found: %s %s\n", result->kanji, result->meaning);
+            printf("found: [%u] %s %s\n", result->number, result->kanji, result->meaning);
             result++;
         }
     }

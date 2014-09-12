@@ -53,7 +53,7 @@ struct rtkresult *rtk_results;
 int rtk_result_count, rtk_result_cap;
 
 
-void rtk_result_add(int number, char *kanji, char *meaning)
+void rtk_result_add(unsigned int number, char *kanji, char *meaning)
 {
     if(rtk_result_count == rtk_result_cap-1)
     {
