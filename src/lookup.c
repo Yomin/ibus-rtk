@@ -40,11 +40,16 @@
 #endif
 
 #define DEFAULT_CAP 10
+#define FLAG_PREFIX 1
+#define FLAG_FOUND  2
+
+#define PREFIX(p) ((p).flag & FLAG_PREFIX)
 
 struct rtkprim
 {
     char **prim;
     int count, cap;
+    char flag;
 };
 
 
@@ -109,9 +114,10 @@ char* rtk_norm(char *str)
     return str;
 }
 
-void rtk_prim_add(char *str, struct rtkprim *p, int norm)
+void rtk_prim_add(char *str, struct rtkprim *p, int norm, int prefix)
 {
     int len = strlen(str);
+    char *prim;
     
     if(str[len-1] == '\n')
     {
@@ -125,8 +131,20 @@ void rtk_prim_add(char *str, struct rtkprim *p, int norm)
         p->prim = realloc(p->prim, p->cap*sizeof(char**));
     }
     
-    p->prim[p->count] = strdup(str);
+    prim = p->prim[p->count] = strdup(str);
     p->count++;
+    
+    if(prefix)
+    {
+        if(prim[len-1] == '*' || prim[len-1] == '+')
+        {
+            len--;
+            prim[len] = 0;
+            p->flag |= FLAG_PREFIX;
+        }
+        else
+            p->flag = 0;
+    }
     
     if(norm)
         rtk_norm(p->prim[p->count-1]);
@@ -208,11 +226,10 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
     
     for(x=0; x<argc; x++)
     {
-        prim[x].count = 1;
+        prim[x].count = 0;
         prim[x].cap = DEFAULT_CAP;
         prim[x].prim = malloc(DEFAULT_CAP*sizeof(char**));
-        prim[x].prim[0] = strdup(argv[x].primitive);
-        rtk_norm(prim[x].prim[0]);
+        rtk_prim_add(argv[x].primitive, &prim[x], 1, 1);
         argv[x].found = 0;
     }
     
@@ -241,11 +258,11 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
         ptmp1.prim = malloc(DEFAULT_CAP*sizeof(char**));
         
         // create list of meaning and alternative meanings
-        rtk_prim_add(meaning, &ptmp1, 1);
+        rtk_prim_add(meaning, &ptmp1, 1, 0);
         tmpstr = strtok(alt, "/");
         while(tmpstr && (tmpstr[0] != '-' || tmpstr[1]))
         {
-            rtk_prim_add(tmpstr, &ptmp1, 1);
+            rtk_prim_add(tmpstr, &ptmp1, 1, 0);
             tmpstr = strtok(0, "/");
         }
         
@@ -259,12 +276,17 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
         found = allot = 0;
         foundpos = -1;
         for(x=0; x<argc; x++)
+        {
+            prim[x].flag &= ~FLAG_FOUND;
+            
             for(z=0; z<ptmp1.count; z++)
-                if(!strcmp(prim[x].prim[0], ptmp1.prim[z]))
+                if((!PREFIX(prim[x]) && !strcmp(prim[x].prim[0], ptmp1.prim[z]))
+                    || (PREFIX(prim[x]) && !strncmp(prim[x].prim[0], ptmp1.prim[z], strlen(prim[x].prim[0]))))
                 {
                     found++;
                     allot = 1;
                     argv[x].found = 1;
+                    prim[x].flag |= FLAG_FOUND;
                     
                     // only add if found meaning/alt not skipped
                     // and add only those which are not skipped
@@ -273,10 +295,11 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
                         foundpos = z;
                         for(z=skip; z<ptmp1.count; z++)
                             if(z != foundpos)
-                                rtk_prim_add(ptmp1.prim[z], &prim[x], 0);
+                                rtk_prim_add(ptmp1.prim[z], &prim[x], 0, 0);
                     }
                     break;
                 }
+        }
         
         // continue if no sub primitives
         if(kprim[0] == '-' && kprim[1] == '\n')
@@ -295,7 +318,7 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
         tmpstr = strtok(kprim, "/");
         while(tmpstr)
         {
-            rtk_prim_add(tmpstr, &ptmp2, 1);
+            rtk_prim_add(tmpstr, &ptmp2, 1, 0);
             tmpstr = strtok(0, "/");
         }
         
@@ -309,7 +332,8 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
         {
             for(y=0; y<prim[x].count; y++)
                 for(z=0; z<ptmp2.count; z++)
-                    if(!strcmp(prim[x].prim[y], ptmp2.prim[z]))
+                    if((!PREFIX(prim[x]) && !strcmp(prim[x].prim[y], ptmp2.prim[z]))
+                        || (PREFIX(prim[x]) && !strncmp(prim[x].prim[y], ptmp2.prim[z], strlen(prim[x].prim[y]))))
                     {
                         found++;
                         y = prim[x].count;
@@ -320,13 +344,11 @@ struct rtkresult* rtk_lookup(int argc, struct rtkinput *argv)
             {
                 // skip meaning/alt if already defined as primitive/alt
                 for(z=skip; z<ptmp1.count; z++)
-                    rtk_prim_add(ptmp1.prim[z], &prim[x], 0);
+                    rtk_prim_add(ptmp1.prim[z], &prim[x], 0, 0);
             }
             // mark found if meaning == user entered primitive
-            else
-                for(y=0; y<ptmp1.count; y++)
-                    if(!strcmp(prim[x].prim[0], ptmp1.prim[y]))
-                        found++;
+            else if(prim[x].flag & FLAG_FOUND)
+                found++;
         }
         
         // if for every primitve list a matching one is found

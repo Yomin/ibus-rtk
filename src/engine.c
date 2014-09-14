@@ -257,6 +257,8 @@ static gboolean ibus_rtk_engine_process_key_event(IBusEngine *engine, guint keyv
             case IBUS_space:
             case IBUS_period:
             case IBUS_minus:
+            case IBUS_plus:
+            case IBUS_asterisk:
                 goto input;
             default:
                 if(is_alpha(keyval))
@@ -498,6 +500,8 @@ end:    rtk->cursor = rtk->preedit->len;
         break;
     case IBUS_period:
     case IBUS_minus:
+    case IBUS_plus:
+    case IBUS_asterisk:
         goto input;
     default:
         if(is_alpha(keyval))
