@@ -79,7 +79,7 @@ void rtk_result_add(unsigned int number, char *kanji, char *meaning, int allot)
     rtk_result_count++;
 }
 
-char* rtk_norm(char *str)
+char* rtk_norm(char *str, int plural)
 {
     char *s = str;
     
@@ -108,7 +108,7 @@ char* rtk_norm(char *str)
     // remove plural 's'
     // non plural words are severed but two primitives
     // should not differ by only the trailing 's'
-    if(*s == 's')
+    if(!plural && *s == 's')
         *s = 0;
     
     return str;
@@ -147,7 +147,7 @@ void rtk_prim_add(char *str, struct rtkprim *p, int norm, int prefix)
     }
     
     if(norm)
-        rtk_norm(p->prim[p->count-1]);
+        rtk_norm(p->prim[p->count-1], prefix && PREFIX(*p));
 }
 
 void rtk_prim_free(struct rtkprim *p)
