@@ -83,14 +83,19 @@ char* rtk_norm(char *str, int plural)
 {
     char *s = str;
     
-    // substitute upper for lower characters
-    // and special characters with whitespace
     while(*s)
     {
+        // substitute upper for lower characters
         if(*s >= 'A' && *s <= 'Z')
             *s += 32;
         else switch(*s)
         {
+        // remove trailing comment
+        case '[':
+            *s = 0;
+            --s;
+            break;
+        // substitute special characters with whitespace
         case '-':
         case '.':
         case '?':
