@@ -3,6 +3,7 @@ Makefile
 Makefile.in
 aclocal.m4
 autom4te.cache
+compile
 config.*
 configure
 depcomp
@@ -18,5 +19,7 @@ i686
 src/ibus-engine-rtk
 src/rtklookup
 src/rtk.xml
+dicts/primitives
+dicts/rtk-dicts*
 *.o
 *.1

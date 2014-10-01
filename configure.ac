@@ -11,6 +11,16 @@ PKG_CHECK_MODULES([IBUS], [ibus-1.0 >= 1.3.0])
 
 # Checks for programs.
 AC_PROG_CC
+AM_PROG_CC_C_O
+
+AC_CHECK_PROGS([DLPROG], [git wget curl])
+if test "x$ac_cv_prog_DLPROG" = x; then
+    AC_MSG_ERROR([neither git nor wget nor curl available])
+fi
+AC_CHECK_PROG([TAR], [tar], [tar])
+if test "x$ac_cv_prog_TAR" = x; then
+    AC_MSG_ERROR([tar not avaiable])
+fi
 
 # Checks for libraries.
 
